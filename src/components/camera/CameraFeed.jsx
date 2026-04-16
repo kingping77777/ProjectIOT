@@ -49,9 +49,21 @@ export function CameraFeed({ hands, gesture, handCount }) {
     let stream = null
 
     async function startCamera() {
-      // Camera purposefully turned off based on user request
-      setCamStatus('denied')
-      return
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 360 }, facingMode: 'user' },
+          audio: false,
+        })
+        const video = videoRef.current
+        if (video) {
+          video.srcObject = stream
+          await video.play()
+        }
+        setCamStatus('active')
+      } catch (err) {
+        console.warn('Camera access denied:', err)
+        setCamStatus('denied')
+      }
     }
 
     startCamera()

@@ -11,7 +11,7 @@ import { DrumMode } from './components/instruments/DrumMode'
 import { ModeSwitch } from './components/instruments/ModeSwitch'
 import { XYPad } from './components/controls/XYPad'
 import { HandTracker } from './components/controls/HandTracker'
-import { useSimulatedHands } from './hooks/useSimulatedHands'
+
 import { useBackend } from './hooks/useBackend'
 
 const WS_STATUS_COLORS = {
@@ -31,72 +31,42 @@ function ConnectionPanel({ wsUrl, setWsUrl, mode, onToggleMode, wsStatus }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
     >
-      {/* Mode toggle */}
-      <button
-        onClick={onToggleMode}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-        style={{
-          background: mode === 'live'
-            ? 'rgba(6,182,212,0.15)' : 'rgba(139,92,246,0.12)',
-          border: `1px solid ${mode === 'live' ? 'rgba(6,182,212,0.5)' : 'rgba(139,92,246,0.4)'}`,
-          color: mode === 'live' ? '#06b6d4' : '#a855f7',
-        }}
-      >
-        {mode === 'live' ? <Radio className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-        {mode === 'live' ? 'LIVE MODE' : 'DEMO MODE'}
-      </button>
-
       {/* WS URL input */}
-      {mode === 'live' && (
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Wifi className="w-3.5 h-3.5 text-slate-400 flex-none" />
-          <input
-            type="text"
-            value={wsUrl}
-            onChange={e => setWsUrl(e.target.value)}
-            placeholder="ws://192.168.1.xx:5000"
-            className="flex-1 min-w-0 text-xs font-mono bg-transparent text-slate-300 outline-none border-b border-slate-700 focus:border-cyan-500 transition-colors py-0.5"
-            spellCheck={false}
-          />
-        </div>
-      )}
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <Wifi className="w-3.5 h-3.5 text-slate-400 flex-none" />
+        <input
+          type="text"
+          value={wsUrl}
+          onChange={e => setWsUrl(e.target.value)}
+          placeholder="ws://192.168.1.xx:5000"
+          className="flex-1 min-w-0 text-xs font-mono bg-transparent text-slate-300 outline-none border-b border-slate-700 focus:border-cyan-500 transition-colors py-0.5"
+          spellCheck={false}
+        />
+      </div>
 
       {/* WS status */}
-      {mode === 'live' && (
-        <div
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono flex-none"
-          style={{ background: col.bg, border: `1px solid ${col.border}`, color: col.text }}
-        >
-          <motion.div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: col.text }}
-            animate={wsStatus === 'connecting' ? { opacity: [1,0.3,1] } : {}}
-            transition={{ duration: 0.8, repeat: Infinity }}
-          />
-          {wsStatus.toUpperCase()}
-        </div>
-      )}
-
-      {mode === 'demo' && (
-        <span className="text-xs text-slate-500 font-mono">
-          Simulated hand data — connect Pi to go live
-        </span>
-      )}
+      <div
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono flex-none"
+        style={{ background: col.bg, border: `1px solid ${col.border}`, color: col.text }}
+      >
+        <motion.div
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ background: col.text }}
+          animate={wsStatus === 'connecting' ? { opacity: [1,0.3,1] } : {}}
+          transition={{ duration: 0.8, repeat: Infinity }}
+        />
+        {wsStatus.toUpperCase()}
+      </div>
     </motion.div>
   )
 }
 
 // ── Root App ───────────────────────────────────────────────────────
 export default function App() {
-  const [connectionMode, setConnectionMode] = useState('demo') // 'demo' | 'live'
-  const [wsUrl, setWsUrl] = useState('ws://192.168.1.100:5000')
+  const [wsUrl, setWsUrl] = useState('ws://localhost:5000')
 
-  // Always run both hooks; only one feeds the UI
-  const demo = useSimulatedHands()
-  const live = useBackend(connectionMode === 'live' ? wsUrl : null)
-
-  const active = connectionMode === 'live' ? live : demo
-  const { handState, wsStatus, setMode, cyclePreset } = active
+  const live = useBackend(wsUrl)
+  const { handState, wsStatus, setMode, cyclePreset } = live
 
   const {
     hands, gesture, fps, latency, systemActive,
@@ -134,8 +104,6 @@ export default function App() {
       <ConnectionPanel
         wsUrl={wsUrl}
         setWsUrl={setWsUrl}
-        mode={connectionMode}
-        onToggleMode={() => setConnectionMode(m => m === 'demo' ? 'live' : 'demo')}
         wsStatus={wsStatus ?? 'disconnected'}
       />
 
@@ -204,7 +172,7 @@ export default function App() {
           <div className="mt-4 text-center">
             <p className="text-xs text-slate-700 font-mono">
               FigureFlow · MediaPipe Hands + FluidSynth · Raspberry Pi 4 (8GB)
-              {connectionMode === 'live' ? ` · Live: ${wsUrl}` : ' · Demo Mode'}
+              {` · Live: ${wsUrl}`}
             </p>
           </div>
         </div>
